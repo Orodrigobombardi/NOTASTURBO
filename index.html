@@ -1,0 +1,123 @@
+<body>
+    <link rel="stylesheet" href="index.css">
+
+ <body>
+
+  <h1>📝 NOTES</h1>
+
+  <div class="top-bar">
+    <input type="text" id="search" placeholder="Buscar por título..." oninput="filterNotes()">
+    <button onclick="openModal()">+ Nova Nota</button>
+  </div>
+
+  <div class="notes-container" id="notesContainer"></div>
+
+  <!-- Modal de Criação/Edição -->
+  <div class="modal" id="noteModal">
+    <div class="modal-content">
+      <input type="text" id="noteTitle" placeholder="Título da nota">
+      <textarea id="noteText" rows="10" placeholder="Digite sua anotação..."></textarea>
+      <button onclick="saveNote()">Salvar</button>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação de Exclusão -->
+  <div class="delete-modal" id="deleteModal">
+    <div class="delete-content">
+      <p>Tem certeza que deseja excluir esta nota?</p>
+      <button class="cancel" onclick="closeDeleteModal()">Cancelar</button>
+      <button onclick="confirmDelete()">Excluir</button>
+    </div>
+  </div>
+
+  <script>
+    let editingIndex = null;
+    let deletingIndex = null;
+
+    function openModal(note = null, index = null) {
+      document.getElementById('noteModal').style.display = 'flex';
+      editingIndex = index;
+      document.getElementById('noteTitle').value = note ? note.title : '';
+      document.getElementById('noteText').value = note ? note.text : '';
+    }
+
+    function closeModal() {
+      document.getElementById('noteModal').style.display = 'none';
+    }
+
+    function openDeleteModal(index) {
+      deletingIndex = index;
+      document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+      deletingIndex = null;
+      document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    function confirmDelete() {
+      let notes = JSON.parse(localStorage.getItem('notes') || '[]');
+      notes.splice(deletingIndex, 1);
+      localStorage.setItem('notes', JSON.stringify(notes));
+      closeDeleteModal();
+      loadNotes();
+    }
+
+    window.onclick = function(event) {
+      if (event.target.id === "noteModal") closeModal();
+      if (event.target.id === "deleteModal") closeDeleteModal();
+    }
+
+    function saveNote() {
+      const title = document.getElementById('noteTitle').value.trim();
+      const text = document.getElementById('noteText').value.trim();
+      if (!title || !text) return;
+
+      let notes = JSON.parse(localStorage.getItem('notes') || '[]');
+      const date = new Date().toLocaleString('pt-BR');
+
+      if (editingIndex !== null) {
+        notes[editingIndex] = { title, text, date: notes[editingIndex].date };
+      } else {
+        notes.push({ title, text, date });
+      }
+
+      localStorage.setItem('notes', JSON.stringify(notes));
+      closeModal();
+      loadNotes();
+    }
+
+    function loadNotes() {
+      const container = document.getElementById('notesContainer');
+      container.innerHTML = '';
+      const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+
+      notes.forEach((note, index) => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.innerHTML = `
+          <button class="delete-btn" onclick="event.stopPropagation(); openDeleteModal(${index})">×</button>
+          <strong>${note.title}</strong>
+          <p>${note.text.substring(0, 60)}...</p>
+          <small>🗓 ${note.date}</small>
+        `;
+        card.onclick = () => openModal(note, index);
+        container.appendChild(card);
+      });
+    }
+
+    function filterNotes() {
+      const query = document.getElementById('search').value.toLowerCase();
+      const cards = document.querySelectorAll('.note-card');
+
+      cards.forEach(card => {
+        const title = card.querySelector('strong').innerText.toLowerCase();
+        card.style.display = title.includes(query) ? 'block' : 'none';
+      });
+    }
+
+    loadNotes();
+  </script>
+
+</body>
+</html>
